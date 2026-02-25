@@ -46,49 +46,13 @@ import swervelib.telemetry.SwerveDriveTelemetry;
  * https://gitlab.com/ironclad_code/ironclad-2024/-/blob/master/src/main/java/frc/robot/vision/Vision.java?ref_type=heads
  */
 public class Vision {
-
-  /**
-   * April Tag Field Layout of the year.
-   */
-  public static final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeAndyMark);
-  /**
-   * Ambiguity defined as a value between (0,1). Used in
-   * {@link Vision#filterPose}.
-   */
+  public static final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout
+      .loadField(AprilTagFields.k2025ReefscapeAndyMark);
   private final double maximumAmbiguity = 0.25;
-  /**
-   * Photon Vision Simulation
-   */
-  public VisionSystemSim visionSim;
-  /**
-   * Count of times that the odom thinks we're more than 10meters away from the
-   * april tag.
-   */
   private double longDistangePoseEstimationCount = 0;
-  /**
-   * Field from {@link swervelib.SwerveDrive#field}
-   */
-  private Field2d field2d;
 
-  /**
-   * Constructor for the Vision class.
-   *
-   * @param field       Current field, should be {@link SwerveDrive#field}
-   */
-  public Vision() {
-    this.field2d = new Field2d();
-
-    if (Robot.isSimulation()) {
-      visionSim = new VisionSystemSim("Vision");
-      visionSim.addAprilTags(fieldLayout);
-
-      for (Cameras c : Cameras.values()) {
-        c.addToVisionSim(visionSim);
-      }
-
-      openSimCameraViews();
-    }
-  }
+  private Field2d field2d = new Field2d();
+  public VisionSystemSim visionSim;
 
   /**
    * Calculates a target pose relative to an AprilTag on the field.
@@ -156,52 +120,13 @@ public class Vision {
     if (Robot.isSimulation()) {
       Field2d debugField = visionSim.getDebugField();
       // Uncomment to enable outputting of vision targets in sim.
-      poseEst.ifPresentOrElse(est -> debugField .getObject("VisionEstimation") .setPose(est.estimatedPose.toPose2d()), () -> {
-        debugField.getObject("VisionEstimation").setPoses();
-      });
+      poseEst.ifPresentOrElse(est -> debugField.getObject("VisionEstimation").setPose(est.estimatedPose.toPose2d()),
+          () -> {
+            debugField.getObject("VisionEstimation").setPoses();
+          });
     }
     return poseEst;
   }
-
-  /**
-   * Filter pose via the ambiguity and find best estimate between all of the
-   * camera's throwing out distances more than
-   * 10m for a short amount of time.
-   *
-   * @param pose Estimated robot pose.
-   * @return Could be empty if there isn't a good reading.
-   */
-  // @Deprecated(since = "2024", forRemoval = true)
-  // private Optional<EstimatedRobotPose> filterPose(Optional<EstimatedRobotPose> pose) {
-  //   if (pose.isPresent()) {
-  //     double bestTargetAmbiguity = 1; // 1 is max ambiguity
-  //     for (PhotonTrackedTarget target : pose.get().targetsUsed) {
-  //       double ambiguity = target.getPoseAmbiguity();
-  //       if (ambiguity != -1 && ambiguity < bestTargetAmbiguity) {
-  //         bestTargetAmbiguity = ambiguity;
-  //       }
-  //     }
-  //     // ambiguity to high dont use estimate
-  //     if (bestTargetAmbiguity > maximumAmbiguity) {
-  //       return Optional.empty();
-  //     }
-
-  //     // est pose is very far from recorded robot pose
-  //     if (PhotonUtils.getDistanceToPose(currentPose.get(), pose.get().estimatedPose.toPose2d()) > 1) {
-  //       longDistangePoseEstimationCount++;
-
-  //       // if it calculates that were 10 meter away for more than 10 times in a row its
-  //       // probably right
-  //       if (longDistangePoseEstimationCount < 10) {
-  //         return Optional.empty();
-  //       }
-  //     } else {
-  //       longDistangePoseEstimationCount = 0;
-  //     }
-  //     return pose;
-  //   }
-  //   return Optional.empty();
-  // }
 
   /**
    * Get distance of the robot from the AprilTag pose.
@@ -243,24 +168,6 @@ public class Vision {
    */
   public VisionSystemSim getVisionSim() {
     return visionSim;
-  }
-
-  /**
-   * Open up the photon vision camera streams on the localhost, assumes running
-   * photon vision on localhost.
-   */
-  private void openSimCameraViews() {
-    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-      // try
-      // {
-      // Desktop.getDesktop().browse(new URI("http://localhost:1182/"));
-      // Desktop.getDesktop().browse(new URI("http://localhost:1184/"));
-      // Desktop.getDesktop().browse(new URI("http://localhost:1186/"));
-      // } catch (IOException | URISyntaxException e)
-      // {
-      // e.printStackTrace();
-      // }
-    }
   }
 
   /**
@@ -469,8 +376,6 @@ public class Vision {
       updateUnreadResults();
       return estimatedRobotPose;
     }
-
-
 
     /**
      * Update the latest results, cached with a maximum refresh rate of 1req/15ms.

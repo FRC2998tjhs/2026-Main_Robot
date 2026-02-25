@@ -1,0 +1,2 @@
+[ ] Get actual field april tags
+[ ] Dynamic by alliance
