@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import frc.robot.subsystems.swervedrive.Vision;
 
@@ -35,14 +36,9 @@ public class RobotContainer {
   private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"),
       vision);
   private final IntakeSubsystem intake = new IntakeSubsystem();
+  private final ShooterSubsystem shooter = new ShooterSubsystem();
 
   private final SendableChooser<Command> autoChooser;
-
-  private final SparkMax mainShooter = new SparkMax(19, MotorType.kBrushless);
-  private final SparkMax secondaryShooter = new SparkMax(2, MotorType.kBrushless);
-
-  // private final PWMVictorSPX right_pickup = new PWMVictorSPX(0);
-  // private final PWMVictorSPX left_pickup = new PWMVictorSPX(1);
 
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled
@@ -84,11 +80,15 @@ public class RobotContainer {
     Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
 
     drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
+    shooter.setDefaultCommand(shooter.powerFromSupplier(() -> driverXbox.getRightTriggerAxis()));
 
     driverXbox.start().onTrue((Commands.runOnce(drivebase::zeroGyro)));
     driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
+    
     driverXbox.leftBumper().onTrue(intake.up());
-    driverXbox.y().whileTrue(drivebase.driveForward());
+    driverXbox.rightBumper().onTrue(intake.down());
+    driverXbox.y().onTrue(intake.pickup());
+    driverXbox.b().onTrue(intake.stop());
   }
 
   public Command getAutonomousCommand() {
@@ -100,8 +100,8 @@ public class RobotContainer {
   }
 
   public void telopPeriodic() {
-    mainShooter.set(-driverXbox.getRightTriggerAxis());
-    secondaryShooter.set(driverXbox.getRightTriggerAxis());
+    // mainShooter.set(-driverXbox.getRightTriggerAxis());
+    // secondaryShooter.set(driverXbox.getRightTriggerAxis());
     // if (driverXbox.leftBumper().getAsBoolean()) {
     //   left_pickup.set(-0.084);
     //   right_pickup.set(0.05);

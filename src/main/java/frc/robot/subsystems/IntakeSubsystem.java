@@ -21,7 +21,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final SparkMax pickup = new SparkMax(8, MotorType.kBrushless);
 
-    private final double pickupSpeed = 1;
+    private final double pickupSpeed = 0.5;
     private final double liftSpeedMax = 1;
     private final double leftSpeedMultiple = 1.68;
     private final double liftTime = 1;
@@ -59,13 +59,13 @@ public class IntakeSubsystem extends SubsystemBase {
             pickup.set(pickupSpeed);
         });
     }
-
+    
     public Command eject() {
         return Commands.runOnce(() -> {
             pickup.set(-pickupSpeed);
         });
     }
-
+    
     public Command stop() {
         return Commands.runOnce(() -> {
             pickup.set(0);
