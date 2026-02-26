@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import frc.robot.subsystems.swervedrive.Vision;
 
@@ -33,14 +34,15 @@ public class RobotContainer {
 
   private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"),
       vision);
+  private final IntakeSubsystem intake = new IntakeSubsystem();
 
   private final SendableChooser<Command> autoChooser;
 
   private final SparkMax mainShooter = new SparkMax(19, MotorType.kBrushless);
   private final SparkMax secondaryShooter = new SparkMax(2, MotorType.kBrushless);
 
-  private final PWMVictorSPX right_pickup = new PWMVictorSPX(0);
-  private final PWMVictorSPX left_pickup = new PWMVictorSPX(1);
+  // private final PWMVictorSPX right_pickup = new PWMVictorSPX(0);
+  // private final PWMVictorSPX left_pickup = new PWMVictorSPX(1);
 
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled
@@ -85,7 +87,7 @@ public class RobotContainer {
 
     driverXbox.start().onTrue((Commands.runOnce(drivebase::zeroGyro)));
     driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
-    driverXbox.leftBumper().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
+    driverXbox.leftBumper().onTrue(intake.up());
     driverXbox.y().whileTrue(drivebase.driveForward());
   }
 
@@ -100,16 +102,15 @@ public class RobotContainer {
   public void telopPeriodic() {
     mainShooter.set(-driverXbox.getRightTriggerAxis());
     secondaryShooter.set(driverXbox.getRightTriggerAxis());
-    if (driverXbox.leftBumper().getAsBoolean()) {
-      left_pickup.set(-0.084);
-      right_pickup.set(0.05);
-    } else if (driverXbox.rightBumper().getAsBoolean()) {
-      left_pickup.set(0.084);
-      right_pickup.set(-0.05);
-    } else {
-      left_pickup.set(0);
-      right_pickup.set(0);
-    }
-
+    // if (driverXbox.leftBumper().getAsBoolean()) {
+    //   left_pickup.set(-0.084);
+    //   right_pickup.set(0.05);
+    // } else if (driverXbox.rightBumper().getAsBoolean()) {
+    //   left_pickup.set(0.084);
+    //   right_pickup.set(-0.05);
+    // } else {
+    //   left_pickup.set(0);
+    //   right_pickup.set(0);
+    // }
   }
 }
