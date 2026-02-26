@@ -16,7 +16,7 @@ public class ShooterSubsystem {
     }
 
     public void turnThingy() {
-        System.out.println(vision.getEstimatedGlobalPose(Vision.Cameras.LEFT_CAM));
+        // System.out.println(vision.getEstimatedGlobalPose(Vision.Cameras.LEFT_CAM));
         // vision.getAprilTagPose(4, new Transform2d(0,0));
     }
 }

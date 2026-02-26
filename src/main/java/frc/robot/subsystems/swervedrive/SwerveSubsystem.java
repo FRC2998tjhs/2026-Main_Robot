@@ -56,7 +56,7 @@ import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 public class SwerveSubsystem extends SubsystemBase {
   private final SwerveDrive swerveDrive;
   private final boolean visionDriveTest = true;
-  private Vision vision;
+  private final Vision vision;
 
   /**
    * Initialize {@link SwerveDrive} with the directory provided.
@@ -66,6 +66,7 @@ public class SwerveSubsystem extends SubsystemBase {
   public SwerveSubsystem(File directory, Vision vision) {
     // boolean blueAlliance = DriverStation.getAlliance().isPresent() &&
     // DriverStation.getAlliance().get() == Alliance.Blue;
+    this.vision = vision;
 
     Pose2d startingPose = new Pose2d(new Translation2d(Meter.of(1), Meter.of(4)), Rotation2d.fromDegrees(0));
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
@@ -82,22 +83,12 @@ public class SwerveSubsystem extends SubsystemBase {
     setupPathPlanner();
   }
 
-  /**
-   * Construct the swerve drive.
-   *
-   * @param driveCfg      SwerveDriveConfiguration for the swerve.
-   * @param controllerCfg Swerve Controller.
-   */
-  public SwerveSubsystem(SwerveDriveConfiguration driveCfg, SwerveControllerConfiguration controllerCfg) {
-    swerveDrive = new SwerveDrive(driveCfg, controllerCfg, Constants.MAX_SPEED, new Pose2d(new Translation2d(Meter.of(2), Meter.of(0)), Rotation2d.fromDegrees(0)));
-  }
-
   @Override
   public void periodic() {
     if (visionDriveTest) {
       swerveDrive.updateOdometry();
       vision.updatePoseEstimation(swerveDrive);
-      System.out.println(vision.getDistanceFromAprilTag(4, swerveDrive::getPose));
+      // System.out.println(vision.getDistanceFromAprilTag(4, swerveDrive::getPose));
     }
   }
 

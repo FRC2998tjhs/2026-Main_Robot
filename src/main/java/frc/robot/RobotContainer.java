@@ -6,8 +6,12 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -31,6 +35,12 @@ public class RobotContainer {
       vision);
 
   private final SendableChooser<Command> autoChooser;
+
+  private final SparkMax mainShooter = new SparkMax(19, MotorType.kBrushless);
+  private final SparkMax secondaryShooter = new SparkMax(2, MotorType.kBrushless);
+
+  private final PWMVictorSPX right_pickup = new PWMVictorSPX(0);
+  private final PWMVictorSPX left_pickup = new PWMVictorSPX(1);
 
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled
@@ -85,5 +95,21 @@ public class RobotContainer {
 
   public void setMotorBrake(boolean brake) {
     drivebase.setMotorBrake(brake);
+  }
+
+  public void telopPeriodic() {
+    mainShooter.set(-driverXbox.getRightTriggerAxis());
+    secondaryShooter.set(driverXbox.getRightTriggerAxis());
+    if (driverXbox.leftBumper().getAsBoolean()) {
+      left_pickup.set(-0.084);
+      right_pickup.set(0.05);
+    } else if (driverXbox.rightBumper().getAsBoolean()) {
+      left_pickup.set(0.084);
+      right_pickup.set(-0.05);
+    } else {
+      left_pickup.set(0);
+      right_pickup.set(0);
+    }
+
   }
 }
