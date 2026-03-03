@@ -84,9 +84,9 @@ public class RobotContainer {
 
     driverXbox.start().onTrue((Commands.runOnce(drivebase::zeroGyro)));
     driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
-    
-    driverXbox.leftBumper().onTrue(intake.up());
-    driverXbox.rightBumper().onTrue(intake.down());
+
+    // driverXbox.leftBumper().onTrue(intake.up());
+    // driverXbox.rightBumper().onTrue(intake.down());
     driverXbox.y().onTrue(intake.pickup());
     driverXbox.b().onTrue(intake.stop());
   }
@@ -100,17 +100,24 @@ public class RobotContainer {
   }
 
   public void telopPeriodic() {
+    if (driverXbox.leftBumper().getAsBoolean()) {
+      intake.setLiftSpeed(1);
+    } else if (driverXbox.rightBumper().getAsBoolean()) {
+      intake.setLiftSpeed(-1);
+    } else {
+      intake.setLiftSpeed(0);
+    }
     // mainShooter.set(-driverXbox.getRightTriggerAxis());
     // secondaryShooter.set(driverXbox.getRightTriggerAxis());
     // if (driverXbox.leftBumper().getAsBoolean()) {
-    //   left_pickup.set(-0.084);
-    //   right_pickup.set(0.05);
+    // left_pickup.set(-0.084);
+    // right_pickup.set(0.05);
     // } else if (driverXbox.rightBumper().getAsBoolean()) {
-    //   left_pickup.set(0.084);
-    //   right_pickup.set(-0.05);
+    // left_pickup.set(0.084);
+    // right_pickup.set(-0.05);
     // } else {
-    //   left_pickup.set(0);
-    //   right_pickup.set(0);
+    // left_pickup.set(0);
+    // right_pickup.set(0);
     // }
   }
 }

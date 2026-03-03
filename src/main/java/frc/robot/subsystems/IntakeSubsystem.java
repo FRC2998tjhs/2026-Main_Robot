@@ -3,31 +3,28 @@ package frc.robot.subsystems;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeSubsystem extends SubsystemBase {
-    /*
-     * TODO
-     * functions:
-     * -> start pickup
-     * -> stop pickup
-     */
-
     private final PWMVictorSPX rightLiftMotor = new PWMVictorSPX(0);
-    private final PWMVictorSPX leftLiftMotor = new PWMVictorSPX(1);
-
+    private final SparkMax leftLiftMotor = new SparkMax(3, MotorType.kBrushless);
     private final SparkMax pickup = new SparkMax(8, MotorType.kBrushless);
 
-    private final double pickupSpeed = 0.5;
-    private final double liftSpeedMax = 1;
+    private final double maxPickupRpm = 2000;
+    private double targetPickupRpm = 0;
+    private final PIDController pickupPid = new PIDController(0.0001, 0.0002, 0);
+
+    private final double liftSpeedMax = 0.5;
     private final double leftSpeedMultiple = 1.68;
-    private final double liftTime = 1;
+    private final double liftTime = 1.5;
 
     // Speed from -1 to 1. 1 is up, -1 is down.
-    private void setLiftSpeed(double speed) {
+    public void setLiftSpeed(double speed) {
         rightLiftMotor.set(-liftSpeedMax * speed);
         leftLiftMotor.set(liftSpeedMax * leftSpeedMultiple * speed);
     }
@@ -56,19 +53,34 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command pickup() {
         return Commands.runOnce(() -> {
-            pickup.set(pickupSpeed);
+            targetPickupRpm = maxPickupRpm;
         });
     }
     
     public Command eject() {
         return Commands.runOnce(() -> {
-            pickup.set(-pickupSpeed);
+            targetPickupRpm = -maxPickupRpm;
         });
     }
     
     public Command stop() {
         return Commands.runOnce(() -> {
-            pickup.set(0);
+            targetPickupRpm = 0;
         });
+    }
+
+    @Override
+    public void periodic() {
+        double velocity = pickup.getEncoder().getVelocity();
+        if (Math.abs(velocity - targetPickupRpm) < 1) {
+            return;
+        }
+
+        double speed = pickupPid.calculate(velocity, targetPickupRpm);
+        var clamped = MathUtil.clamp(speed, -1, 1);
+
+        System.out.println("Velocity: " + velocity + ", target: " + targetPickupRpm + ", speed: " + clamped);
+
+        pickup.set(clamped);
     }
 }
