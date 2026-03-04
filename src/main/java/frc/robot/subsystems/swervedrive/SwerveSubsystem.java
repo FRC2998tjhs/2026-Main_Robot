@@ -59,8 +59,8 @@ public class SwerveSubsystem extends SubsystemBase {
       throw new RuntimeException(e);
     }
     swerveDrive.setHeadingCorrection(false); // Heading correction should only be used while controlling the robot via angle.
-    swerveDrive.setCosineCompensator(false);// !SwerveDriveTelemetry.isSimulation); Disables cosine compensation for simulations since it causes discrepancies not seen in real life.
-    swerveDrive.setAngularVelocityCompensation(true, true, 0.1); // Correct for skew that gets worse as angular velocity increases. Start with a coefficient of 0.1.
+    swerveDrive.setCosineCompensator(true);// !SwerveDriveTelemetry.isSimulation); Disables cosine compensation for simulations since it causes discrepancies not seen in real life.
+    swerveDrive.setAngularVelocityCompensation(true, true, -0.1); // Correct for skew that gets worse as angular velocity increases. Start with a coefficient of 0.1.
     swerveDrive.setModuleEncoderAutoSynchronize(false, 1); // Enable if you want to resynchronize your absolute encoders and motor encoders periodically when they are not moving.
     
     setupPathPlanner();
@@ -71,7 +71,6 @@ public class SwerveSubsystem extends SubsystemBase {
     if (visionDriveTest) {
       swerveDrive.updateOdometry();
       vision.updatePoseEstimation(swerveDrive);
-      // System.out.println(vision.getDistanceFromAprilTag(4, swerveDrive::getPose));
     }
   }
 

@@ -79,8 +79,6 @@ public class IntakeSubsystem extends SubsystemBase {
         double speed = pickupPid.calculate(velocity, targetPickupRpm);
         var clamped = MathUtil.clamp(speed, -1, 1);
 
-        System.out.println("Velocity: " + velocity + ", target: " + targetPickupRpm + ", speed: " + clamped);
-
         pickup.set(clamped);
     }
 }
