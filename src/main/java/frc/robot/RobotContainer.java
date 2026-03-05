@@ -21,8 +21,8 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
-import frc.robot.subsystems.swervedrive.SwerveSubsystem;
-import frc.robot.subsystems.swervedrive.Vision;
+import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.Vision;
 
 import java.io.File;
 
@@ -33,10 +33,10 @@ public class RobotContainer {
 
   private final Vision vision = new Vision();
 
-  private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"),
+  private final SwerveSubsystem swerve = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"),
       vision);
   private final IntakeSubsystem intake = new IntakeSubsystem();
-  private final ShooterSubsystem shooter = new ShooterSubsystem();
+  private final ShooterSubsystem shooter = new ShooterSubsystem(swerve);
 
   private final SendableChooser<Command> autoChooser;
 
@@ -44,7 +44,7 @@ public class RobotContainer {
    * Converts driver input into a field-relative ChassisSpeeds that is controlled
    * by angular velocity.
    */
-  SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
+  SwerveInputStream driveAngularVelocity = SwerveInputStream.of(swerve.getSwerveDrive(),
       () -> driverXbox.getLeftY() * -1,
       () -> driverXbox.getLeftX() * -1)
       .withControllerRotationAxis(() -> -driverXbox.getRightX())
@@ -70,25 +70,29 @@ public class RobotContainer {
     var autoChooser = AutoBuilder.buildAutoChooser();
 
     autoChooser.setDefaultOption("Do Nothing", Commands.none());
-    autoChooser.addOption("Drive Forward", drivebase.driveForward().withTimeout(1));
+    autoChooser.addOption("Drive Forward", swerve.driveForward().withTimeout(1));
 
     return autoChooser;
   }
 
   private void configureBindings() {
-    Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
-    Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+    Command driveFieldOrientedDirectAngle = swerve.driveFieldOriented(driveDirectAngle);
+    Command driveFieldOrientedAngularVelocity = swerve.driveFieldOriented(driveAngularVelocity);
 
-    drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
-    shooter.setDefaultCommand(shooter.powerFromSupplier(() -> driverXbox.getRightTriggerAxis()));
+    swerve.setDefaultCommand(driveFieldOrientedAngularVelocity);
+    // shooter.setDefaultCommand(shooter.powerFromSupplier(() -> driverXbox.getRightTriggerAxis()));
+    // shooter.setDefaultCommand(shooter.powerFromSupplier(() -> 1.0));
 
-    driverXbox.start().onTrue((Commands.runOnce(drivebase::zeroGyro)));
-    driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
+    driverXbox.start().onTrue((Commands.runOnce(swerve::zeroGyro)));
+    driverXbox.x().onTrue(Commands.runOnce(swerve::addFakeVisionReading));
 
-    // driverXbox.leftBumper().onTrue(intake.up());
-    // driverXbox.rightBumper().onTrue(intake.down());
+    driverXbox.leftBumper().onTrue(intake.up());
+    driverXbox.rightBumper().onTrue(intake.down());
     driverXbox.y().onTrue(intake.pickup());
     driverXbox.b().onTrue(intake.stop());
+
+    driverXbox.x().whileTrue(shooter.testShoot(() -> 10.0));
+    driverXbox.a().whileTrue(shooter.testShoot(() -> 20.0));
   }
 
   public Command getAutonomousCommand() {
@@ -96,7 +100,7 @@ public class RobotContainer {
   }
 
   public void setMotorBrake(boolean brake) {
-    drivebase.setMotorBrake(brake);
+    swerve.setMotorBrake(brake);
   }
 
   public void telopPeriodic() {

@@ -3,24 +3,122 @@ package frc.robot.subsystems;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
+
+import org.dyn4j.geometry.Vector2;
+import org.dyn4j.geometry.Vector3;
 
 import com.revrobotics.spark.SparkMax;
 
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class ShooterSubsystem extends SubsystemBase {
-    private final SparkMax primary = new SparkMax(19, MotorType.kBrushless);
-    private final SparkMax secondary = new SparkMax(15, MotorType.kBrushless);
+    private static final double WHEEL_RADIUS = Units.inchesToMeters(2);
+    private static final double EXIT_ANGLE = 45.0;
+    private static final double GRAVITY = 9.81;
 
-    private final SparkMax deflector = new SparkMax(16, MotorType.kBrushless);
+    private final SwerveSubsystem swerve;
+
+    private final SparkMax primary = new SparkMax(19, MotorType.kBrushless);
+    private final PIDController primaryPid = new PIDController(0.0, 0.0, 0.0);
+
+    private final SparkMax secondary = new SparkMax(15, MotorType.kBrushless);
+    private final PIDController secondaryPid = new PIDController(0.0, 0.0, 0.0);
+
+    private final SparkMax deflector = new SparkMax(11, MotorType.kBrushless);
+    private final PIDController deflectorPid = new PIDController(0.01, 0.0, 0.0);
+    private static final double ENCODER_STEPS_PER_ROTATION = 3.0905;
+
+    private double targetRpm = 0.0;
+    private Rotation2d targetDeflectorRotation = Rotation2d.kZero;
+
+    public ShooterSubsystem(SwerveSubsystem swerve) {
+        this.swerve = swerve;
+    }
+
+    public Command dontShoot() {
+        return this.run(() -> {
+            targetRpm = 0.0;
+        });
+    }
 
     public Command powerFromSupplier(DoubleSupplier power) {
         return this.run(() -> {
             double now = power.getAsDouble();
-            // System.out.println(primary.getAbsoluteEncoder().getVelocity());
             primary.set(-now);
             secondary.set(-now);
         });
+    }
+
+    public Command shootAbsolute(Supplier<Vector3> globalTarget) {
+        return this.run(() -> {
+            Vector3 target = globalTarget.get();
+            var robotPose = this.swerve.getPose();
+
+            targetDeflectorRotation = deflectorRotation(robotPose, target);
+
+            // Vector2 distanceAlongShootingPlane = shootingPlane(robotPose, target);
+            // setSpeedForShootingPlane(distanceAlongShootingPlane);
+        });
+    }
+
+    private Rotation2d deflectorRotation(Pose2d robotPose, Vector3 target) {
+        var offset = new Translation2d(-1, 1);
+        var rotatedOffset = offset.rotateBy(robotPose.getRotation());
+        var shooterPosition = rotatedOffset.plus(robotPose.getTranslation());
+
+        var shooterToTarget = new Translation2d(target.x, target.y).minus(shooterPosition);
+        var globalShooterAngle = shooterToTarget.getAngle();
+        return globalShooterAngle.minus(robotPose.getRotation());
+    }
+
+    public Command testShoot(DoubleSupplier distanceMeters) {
+        return this.run(() -> {
+            double dx = distanceMeters.getAsDouble();
+            double deflectorExitPointHeight = .508;
+
+            setSpeedForShootingPlane(new Vector2(dx, deflectorExitPointHeight));
+        });
+    }
+
+    private void setSpeedForShootingPlane(Vector2 delta) {
+        double sin = Math.sin(Math.toRadians(EXIT_ANGLE));
+        double cos = Math.cos(Math.toRadians(EXIT_ANGLE));
+
+        double numerator = GRAVITY * delta.x;
+        double denominator = 2 * cos * ((delta.y * cos) / delta.x - sin);
+
+        double exitSpeed = Math.sqrt(numerator / denominator);
+        targetRpm = exitSpeed / (2 * Math.PI * WHEEL_RADIUS) * 60.;
+    }
+
+    @Override
+    public void periodic() {
+        shooterPeriodic();
+        deflectorPeriodic();
+    }
+
+    private void shooterPeriodic() {
+        double primaryPower = primaryPid.calculate(primary.getEncoder().getVelocity(), targetRpm);
+        primary.set(primaryPower);
+
+        double secondaryPower = secondaryPid.calculate(secondary.getEncoder().getVelocity(), targetRpm);
+        secondary.set(secondaryPower);
+    }
+
+    private void deflectorPeriodic() {
+        var encoder = deflector.getEncoder().getPosition();
+        var rotation = new Rotation2d(encoder / ENCODER_STEPS_PER_ROTATION * 2 * Math.PI);
+        var error = targetDeflectorRotation.minus(rotation);
+
+        double power = deflectorPid.calculate(error.getRadians());
+        deflector.set(power);
     }
 }
