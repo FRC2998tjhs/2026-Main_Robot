@@ -11,22 +11,22 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeSubsystem extends SubsystemBase {
-    private final PWMVictorSPX rightLiftMotor = new PWMVictorSPX(0);
-    private final SparkMax leftLiftMotor = new SparkMax(3, MotorType.kBrushless);
     private final SparkMax pickup = new SparkMax(8, MotorType.kBrushless);
+
+    private final SparkMax leftLiftMotor = new SparkMax(3, MotorType.kBrushless);
+    private final double leftSpeedMax = 0.3;
+
+    private final PWMVictorSPX rightLiftMotor = new PWMVictorSPX(0);
+    private final double rightSpeedMax = 0.24;
 
     private final double maxPickupRpm = 2000;
     private double targetPickupRpm = 0;
     private final PIDController pickupPid = new PIDController(0.0001, 0.0002, 0);
 
-    private final double liftSpeedMax = 0.5;
-    private final double leftSpeedMultiple = 1.68;
-    private final double liftTime = 1.5;
-
     // Speed from -1 to 1. 1 is up, -1 is down.
     public void setLiftSpeed(double speed) {
-        rightLiftMotor.set(-liftSpeedMax * speed);
-        leftLiftMotor.set(liftSpeedMax * leftSpeedMultiple * speed);
+        rightLiftMotor.set(-rightSpeedMax * speed);
+        leftLiftMotor.set(-leftSpeedMax * speed);
     }
 
     public Command up() {
@@ -34,7 +34,7 @@ public class IntakeSubsystem extends SubsystemBase {
                 this.runOnce(() -> {
                     this.setLiftSpeed(1);
                 }),
-                Commands.waitSeconds(liftTime),
+                Commands.waitSeconds(0.45),
                 this.runOnce(() -> {
                     this.setLiftSpeed(0);
                 }));
@@ -43,9 +43,9 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command down() {
         return Commands.sequence(
                 this.runOnce(() -> {
-                    this.setLiftSpeed(-1);
+                    this.setLiftSpeed(-0.5);
                 }),
-                Commands.waitSeconds(liftTime),
+                Commands.waitSeconds(0.6),
                 this.runOnce(() -> {
                     this.setLiftSpeed(0);
                 }));
