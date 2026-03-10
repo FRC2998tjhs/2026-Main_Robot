@@ -77,9 +77,9 @@ public class RobotContainer {
 
   private void configureBindings() {
     Command driveFieldOrientedDirectAngle = swerve.driveFieldOriented(driveDirectAngle);
-    Command driveFieldOrientedAngularVelocity = swerve.driveFieldOriented(driveAngularVelocity);
 
-    swerve.setDefaultCommand(driveFieldOrientedAngularVelocity);
+    swerve.setDefaultCommand(driveFieldOrientedDirectAngle);
+
     shooter.setDefaultCommand(shooter.powerFromSupplier(() ->
     driverXbox.getRightTriggerAxis()));
     // shooter.setDefaultCommand(shooter.powerFromSupplier(() -> 1.0));
