@@ -34,7 +34,7 @@ public class IntakeSubsystem extends SubsystemBase {
                 this.runOnce(() -> {
                     this.setLiftSpeed(1);
                 }),
-                Commands.waitSeconds(0.45),
+                Commands.waitSeconds(0.5),
                 this.runOnce(() -> {
                     this.setLiftSpeed(0);
                 }));

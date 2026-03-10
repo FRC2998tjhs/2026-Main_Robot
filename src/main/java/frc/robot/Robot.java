@@ -83,6 +83,7 @@ public class Robot extends TimedRobot {
   @Override
   public void disabledInit() {
     m_robotContainer.setMotorBrake(true);
+    m_robotContainer.disabledInit();
     disabledTimer.reset();
     disabledTimer.start();
   }
@@ -131,6 +132,8 @@ public class Robot extends TimedRobot {
     } else {
       CommandScheduler.getInstance().cancelAll();
     }
+
+    m_robotContainer.teleopInit();
   }
 
   /**

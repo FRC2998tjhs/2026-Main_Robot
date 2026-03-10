@@ -10,14 +10,16 @@ import org.dyn4j.geometry.Vector3;
 
 import com.revrobotics.spark.SparkMax;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.UiTunablePIDController;
 
 public class ShooterSubsystem extends SubsystemBase {
     private static final double WHEEL_RADIUS = Units.inchesToMeters(2);
@@ -27,16 +29,20 @@ public class ShooterSubsystem extends SubsystemBase {
     private final SwerveSubsystem swerve;
 
     private final SparkMax primary = new SparkMax(19, MotorType.kBrushless);
-    private final PIDController primaryPid = new PIDController(0.0, 0.0, 0.0);
+    private final PIDController primaryPid = new UiTunablePIDController("Shooter Primary", 0.0001, 0.0005, 0);
 
     private final SparkMax secondary = new SparkMax(15, MotorType.kBrushless);
-    private final PIDController secondaryPid = new PIDController(0.0, 0.0, 0.0);
+    private final PIDController secondaryPid = new UiTunablePIDController("Shooter Secondary", 0.0001, 0.0005, 0.0);
 
     private final SparkMax deflector = new SparkMax(11, MotorType.kBrushless);
-    private final PIDController deflectorPid = new PIDController(0.01, 0.0, 0.0);
+    private final PIDController deflectorPid = new PIDController(0.01, 0.0, 0.001);
     private static final double ENCODER_STEPS_PER_ROTATION = 3.0905;
 
+    private final PWMVictorSPX kicker = new PWMVictorSPX(1);
+
     private double targetRpm = 0.0;
+    private final double maxRpm = 2500;
+
     private Rotation2d targetDeflectorRotation = Rotation2d.kZero;
 
     public ShooterSubsystem(SwerveSubsystem swerve) {
@@ -52,8 +58,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public Command powerFromSupplier(DoubleSupplier power) {
         return this.run(() -> {
             double now = power.getAsDouble();
-            primary.set(-now);
-            secondary.set(-now);
+            targetRpm = maxRpm * now;
         });
     }
 
@@ -93,9 +98,9 @@ public class ShooterSubsystem extends SubsystemBase {
         double cos = Math.cos(Math.toRadians(EXIT_ANGLE));
 
         double numerator = GRAVITY * delta.x;
-        double denominator = 2 * cos * ((delta.y * cos) / delta.x - sin);
+        double denominator = 2 * cos * (((delta.y * cos) / delta.x) - sin);
 
-        double exitSpeed = Math.sqrt(numerator / denominator);
+        double exitSpeed = Math.sqrt(Math.abs(numerator / denominator));
         targetRpm = exitSpeed / (2 * Math.PI * WHEEL_RADIUS) * 60.;
     }
 
@@ -106,11 +111,15 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private void shooterPeriodic() {
-        double primaryPower = primaryPid.calculate(primary.getEncoder().getVelocity(), targetRpm);
-        primary.set(primaryPower);
+        double primaryPower = primaryPid.calculate(-primary.getEncoder().getVelocity(), targetRpm);
+        double maxPrimaryPower = 0.8;
+        primaryPower = MathUtil.clamp(primaryPower, -maxPrimaryPower, maxPrimaryPower);
 
-        double secondaryPower = secondaryPid.calculate(secondary.getEncoder().getVelocity(), targetRpm);
-        secondary.set(secondaryPower);
+        double secondaryPower = secondaryPid.calculate(-secondary.getEncoder().getVelocity(), targetRpm);
+        secondaryPower = MathUtil.clamp(secondaryPower, -1, 1);
+
+        primary.set(-primaryPower);
+        secondary.set(-secondaryPower);
     }
 
     private void deflectorPeriodic() {
@@ -119,6 +128,11 @@ public class ShooterSubsystem extends SubsystemBase {
         var error = targetDeflectorRotation.minus(rotation);
 
         double power = deflectorPid.calculate(error.getRadians());
+        // System.out.println(power);
         deflector.set(power);
+    }
+
+    public void setKicker(double speed) {
+        kicker.set(speed);
     }
 }

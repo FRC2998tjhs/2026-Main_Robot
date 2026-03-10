@@ -80,9 +80,10 @@ public class RobotContainer {
     Command driveFieldOrientedAngularVelocity = swerve.driveFieldOriented(driveAngularVelocity);
 
     swerve.setDefaultCommand(driveFieldOrientedAngularVelocity);
-    // shooter.setDefaultCommand(shooter.powerFromSupplier(() ->
-    // driverXbox.getRightTriggerAxis()));
+    shooter.setDefaultCommand(shooter.powerFromSupplier(() ->
+    driverXbox.getRightTriggerAxis()));
     // shooter.setDefaultCommand(shooter.powerFromSupplier(() -> 1.0));
+    // shooter.setDefaultCommand(shooter.testShoot(() -> 10.0));
 
     driverXbox.start().onTrue(Commands.runOnce(swerve::zeroGyro));
 
@@ -103,16 +104,25 @@ public class RobotContainer {
     swerve.setMotorBrake(brake);
   }
 
+  public void teleopInit() {
+    // shooter.setKicker(1.0);
+  }
+
   public void telopPeriodic() {
+    shooter.setKicker(driverXbox.getRightTriggerAxis());
     // if (driverXbox.leftBumper().getAsBoolean()) {
-    //   intake.setLiftSpeed(1);
+    // intake.setLiftSpeed(1);
     // } else if (driverXbox.rightBumper().getAsBoolean()) {
-    //   intake.setLiftSpeed(-1);
+    // intake.setLiftSpeed(-1);
     // } else {
-    //   intake.setLiftSpeed(0);
+    // intake.setLiftSpeed(0);
     // }
 
     // mainShooter.set(-driverXbox.getRightTriggerAxis());
     // secondaryShooter.set(driverXbox.getRightTriggerAxis());
+  }
+
+  public void disabledInit() {
+    // shooter.setKicker(0.0);
   }
 }
