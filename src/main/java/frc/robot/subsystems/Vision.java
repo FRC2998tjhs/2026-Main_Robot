@@ -42,7 +42,7 @@ import swervelib.SwerveDrive;
  */
 public class Vision {
   public static final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout
-      .loadField(AprilTagFields.k2025ReefscapeAndyMark);
+      .loadField(AprilTagFields.k2026RebuiltAndymark);
   private final double maximumAmbiguity = 0.25;
   private double longDistancePoseEstimationCount = 0;
 
