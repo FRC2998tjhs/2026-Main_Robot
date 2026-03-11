@@ -29,13 +29,13 @@ public class ShooterSubsystem extends SubsystemBase {
     private final SwerveSubsystem swerve;
 
     private final SparkMax primary = new SparkMax(19, MotorType.kBrushless);
-    private final PIDController primaryPid = new UiTunablePIDController("Shooter Primary", 0.0001, 0.0005, 0);
+    private final PIDController primaryPid = new UiTunablePIDController(0.0, 0.0, 0);
 
     private final SparkMax secondary = new SparkMax(15, MotorType.kBrushless);
-    private final PIDController secondaryPid = new UiTunablePIDController("Shooter Secondary", 0.0001, 0.0005, 0.0);
+    private final PIDController secondaryPid = new PIDController(0.0, 0.0, 0.0);
 
     private final SparkMax deflector = new SparkMax(11, MotorType.kBrushless);
-    private final PIDController deflectorPid = new PIDController(0.01, 0.0, 0.001);
+    private final PIDController deflectorPid = new PIDController(0.1, 0.0, 0.01);
     private static final double ENCODER_STEPS_PER_ROTATION = 3.0905;
 
     private final PWMVictorSPX kicker = new PWMVictorSPX(1);
@@ -43,6 +43,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private double targetRpm = 0.0;
     private final double maxRpm = 2500;
 
+    // Rotation relative to robot. 0 is shooting forward.
     private Rotation2d targetDeflectorRotation = Rotation2d.kZero;
 
     public ShooterSubsystem(SwerveSubsystem swerve) {
@@ -111,12 +112,14 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private void shooterPeriodic() {
+        double primaryBase = 0.00025 * targetRpm;
         double primaryPower = primaryPid.calculate(-primary.getEncoder().getVelocity(), targetRpm);
-        double maxPrimaryPower = 0.8;
-        primaryPower = MathUtil.clamp(primaryPower, -maxPrimaryPower, maxPrimaryPower);
+        double maxPrimaryPower = 1;
+        primaryPower = MathUtil.clamp(primaryBase + primaryPower, -maxPrimaryPower, maxPrimaryPower);
 
+        double secondaryBase = 0.00025 * targetRpm;
         double secondaryPower = secondaryPid.calculate(-secondary.getEncoder().getVelocity(), targetRpm);
-        secondaryPower = MathUtil.clamp(secondaryPower, -1, 1);
+        secondaryPower = MathUtil.clamp(secondaryBase + secondaryPower, -1, 1);
 
         primary.set(-primaryPower);
         secondary.set(-secondaryPower);
@@ -124,15 +127,25 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private void deflectorPeriodic() {
         var encoder = deflector.getEncoder().getPosition();
-        var rotation = new Rotation2d(encoder / ENCODER_STEPS_PER_ROTATION * 2 * Math.PI);
-        var error = targetDeflectorRotation.minus(rotation);
+        var encoderRotation = Rotation2d.fromRadians(encoder / ENCODER_STEPS_PER_ROTATION * 2 * Math.PI);
+        var error = targetDeflectorRotation.minus(encoderRotation);
 
-        double power = deflectorPid.calculate(error.getRadians());
-        // System.out.println(power);
-        deflector.set(power);
+        double power = deflectorPid.calculate(-error.getRadians());
+        double maxPower = 0.1;
+        deflector.set(MathUtil.clamp(power, -maxPower, maxPower));
     }
 
     public void setKicker(double speed) {
         kicker.set(speed);
+    }
+
+    public Command deflectorTo(Supplier<Rotation2d> rotation) {
+        return this.run(() -> {
+            targetDeflectorRotation = rotation.get();
+        });
+    }
+
+    public void zeroDeflector() {
+        deflector.getEncoder().setPosition(0);
     }
 }

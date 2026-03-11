@@ -16,9 +16,9 @@ public class UiTunablePIDController extends PIDController {
     private final GenericEntry setpoint;
     private final GenericEntry output;
 
-    public UiTunablePIDController(String name, double p, double i, double d) {
+    public UiTunablePIDController(double p, double i, double d) {
         super(p, i, d);
-        this.shuffleboardTab = Shuffleboard.getTab("PID Tuning - " + name);
+        this.shuffleboardTab = Shuffleboard.getTab("PID Tuning");
         this.pEntry = shuffleboardTab.add("p", p).getEntry();
         this.iEntry = shuffleboardTab.add("i", i).getEntry();
         this.dEntry = shuffleboardTab.add("d", d).getEntry();
@@ -28,18 +28,30 @@ public class UiTunablePIDController extends PIDController {
         this.output = shuffleboardTab.add("output", 0).getEntry();
     }
 
-    @Override()
+    @Override
     public double calculate(double measurement, double setpoint) {
         super.setP(this.pEntry.getDouble(super.getP()));
         super.setI(this.iEntry.getDouble(super.getI()));
         super.setD(this.dEntry.getDouble(super.getD()));
 
+        this.setpoint.setDouble(setpoint);
+        this.measurement.setDouble(measurement);
+
         double output = super.calculate(measurement, setpoint);
+        this.output.setDouble(output);
+        return output;
+    }
+
+    @Override
+    public double calculate(double measurement) {
+        super.setP(this.pEntry.getDouble(super.getP()));
+        super.setI(this.iEntry.getDouble(super.getI()));
+        super.setD(this.dEntry.getDouble(super.getD()));
 
         this.measurement.setDouble(measurement);
-        this.setpoint.setDouble(setpoint);
-        this.output.setDouble(output);
 
+        double output = super.calculate(measurement);
+        this.output.setDouble(output);
         return output;
     }
 }

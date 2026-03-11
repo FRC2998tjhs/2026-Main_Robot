@@ -6,18 +6,14 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
@@ -52,8 +48,8 @@ public class RobotContainer {
       .scaleTranslation(0.8)
       .allianceRelativeControl(true);
 
-  SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(driverXbox::getRightX,
-      driverXbox::getRightY)
+  SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(driverXbox::getLeftX,
+      driverXbox::getLeftY)
       .headingWhile(true);
 
   public RobotContainer() {
@@ -64,6 +60,8 @@ public class RobotContainer {
 
     autoChooser = buildAutoChooser();
     SmartDashboard.putData("Auto Chooser", autoChooser);
+
+    SmartDashboard.putData("Field", vision.field2d);
   }
 
   private SendableChooser<Command> buildAutoChooser() {
@@ -80,10 +78,8 @@ public class RobotContainer {
 
     swerve.setDefaultCommand(driveFieldOrientedDirectAngle);
 
-    shooter.setDefaultCommand(shooter.powerFromSupplier(() ->
-    driverXbox.getRightTriggerAxis()));
-    // shooter.setDefaultCommand(shooter.powerFromSupplier(() -> 1.0));
-    // shooter.setDefaultCommand(shooter.testShoot(() -> 10.0));
+    shooter.setDefaultCommand(
+        shooter.powerFromSupplier(() -> driverXbox.getRightTriggerAxis()));
 
     driverXbox.start().onTrue(Commands.runOnce(swerve::zeroGyro));
 
@@ -92,8 +88,8 @@ public class RobotContainer {
     driverXbox.y().onTrue(intake.pickup());
     driverXbox.b().onTrue(intake.stop());
 
-    driverXbox.x().whileTrue(shooter.testShoot(() -> 10.0));
-    driverXbox.a().whileTrue(shooter.testShoot(() -> 20.0));
+    // driverXbox.x().whileTrue(shooter.testShoot(() -> 10.0));
+    // driverXbox.a().whileTrue(shooter.testShoot(() -> 20.0));
   }
 
   public Command getAutonomousCommand() {
@@ -106,6 +102,7 @@ public class RobotContainer {
 
   public void teleopInit() {
     // shooter.setKicker(1.0);
+    shooter.zeroDeflector();
   }
 
   public void telopPeriodic() {

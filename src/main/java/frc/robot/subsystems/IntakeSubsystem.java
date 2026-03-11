@@ -3,7 +3,6 @@ package frc.robot.subsystems;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -21,7 +20,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final double maxPickupRpm = 2000;
     private double targetPickupRpm = 0;
-    private final PIDController pickupPid = new PIDController(0.0001, 0.0002, 0);
+    private final PIDController pickupPid = new PIDController(0.0001, 0.0, 0);
 
     // Speed from -1 to 1. 1 is up, -1 is down.
     public void setLiftSpeed(double speed) {
@@ -72,13 +71,12 @@ public class IntakeSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         double velocity = pickup.getEncoder().getVelocity();
-        if (Math.abs(velocity - targetPickupRpm) < 1) {
-            return;
-        }
 
-        double speed = pickupPid.calculate(velocity, targetPickupRpm);
-        var clamped = MathUtil.clamp(speed, -1, 1);
+        double kF = 0.00026;
+        double feedForward = kF * targetPickupRpm;
 
-        pickup.set(clamped);
+        double pid = pickupPid.calculate(velocity, targetPickupRpm);
+
+        pickup.set(feedForward + pid);
     }
 }
