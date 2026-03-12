@@ -48,8 +48,8 @@ public class RobotContainer {
       .scaleTranslation(0.8)
       .allianceRelativeControl(true);
 
-  SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(driverXbox::getLeftX,
-      driverXbox::getLeftY)
+  SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(driverXbox::getRightX,
+      driverXbox::getRightY)
       .headingWhile(true);
 
   public RobotContainer() {

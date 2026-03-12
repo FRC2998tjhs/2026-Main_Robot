@@ -7,6 +7,7 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.estimator.PoseEstimator3d;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -15,10 +16,12 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTablesJNI;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.FieldObject2d;
 import frc.robot.Robot;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,12 +79,16 @@ public class Vision {
    */
   public void updatePoseEstimation(SwerveDrive swerveDrive) {
     for (Cameras camera : Cameras.values()) {
+      FieldObject2d fieldObject = field2d.getObject(camera.name());
+
       Optional<EstimatedRobotPose> poseEst = camera.getEstimatedGlobalPose();
       if (!poseEst.isPresent()) {
+        fieldObject.setPose(new Pose2d());
         continue;
       }
 
       var pose = poseEst.get();
+      fieldObject.setPose(pose.estimatedPose.toPose2d());
       swerveDrive.addVisionMeasurement(pose.estimatedPose.toPose2d(),
           pose.timestampSeconds,
           camera.curStdDevs);
@@ -157,9 +164,13 @@ public class Vision {
   }
 
   enum Cameras {
-    FRONT("front",
-        new Rotation3d(0, Math.toRadians(0), Math.toRadians(0)),
-        new Translation3d(0.215, 0.2915, 0.293),
+    REAR("rear",
+        new Rotation3d(0, Math.toRadians(0), Math.toRadians(180)),
+        new Translation3d(Units.inchesToMeters(-9.375), Units.inchesToMeters(11.375), Units.inchesToMeters(11.75)),
+        VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1)),
+    PORT("port",
+        new Rotation3d(0, Math.toRadians(0), Math.toRadians(90)),
+        new Translation3d(Units.inchesToMeters(-9), Units.inchesToMeters(14), Units.inchesToMeters(14)),
         VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1));
 
     public final Alert latencyAlert;
