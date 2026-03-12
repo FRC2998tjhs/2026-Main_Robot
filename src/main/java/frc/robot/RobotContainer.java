@@ -9,6 +9,7 @@ import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -21,6 +22,8 @@ import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.Vision;
 
 import java.io.File;
+import java.util.Optional;
+import java.util.function.DoubleSupplier;
 
 import swervelib.SwerveInputStream;
 
@@ -48,8 +51,13 @@ public class RobotContainer {
       .scaleTranslation(0.8)
       .allianceRelativeControl(true);
 
-  SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(driverXbox::getRightX,
-      driverXbox::getRightY)
+  SwerveInputStream rightStickAngle = driveAngularVelocity.copy()
+      .withControllerHeadingAxis(allianceRelative(driverXbox::getRightX),
+          allianceRelative(driverXbox::getRightY))
+      .headingWhile(true);
+
+  SwerveInputStream pointAndDrive = driveAngularVelocity.copy().withControllerHeadingAxis(() -> -driverXbox.getRightX(),
+      () -> -driverXbox.getRightY())
       .headingWhile(true);
 
   public RobotContainer() {
@@ -64,6 +72,17 @@ public class RobotContainer {
     SmartDashboard.putData("Field", vision.field2d);
   }
 
+  private DoubleSupplier allianceRelative(DoubleSupplier v) {
+    return () -> {
+      Optional<Alliance> alliance = DriverStation.getAlliance();
+      if (alliance.isPresent() && alliance.get() == Alliance.Red) {
+        return v.getAsDouble();
+      } else {
+        return -v.getAsDouble();
+      }
+    };
+  }
+
   private SendableChooser<Command> buildAutoChooser() {
     var autoChooser = AutoBuilder.buildAutoChooser();
 
@@ -74,9 +93,9 @@ public class RobotContainer {
   }
 
   private void configureBindings() {
-    Command driveFieldOrientedDirectAngle = swerve.driveFieldOriented(driveDirectAngle);
-
-    swerve.setDefaultCommand(driveFieldOrientedDirectAngle);
+    Command driveCommand = swerve.driveFieldOriented(rightStickAngle);
+    // Command driveCommand = swerve.driveFieldOriented(pointAndDrive);
+    swerve.setDefaultCommand(driveCommand);
 
     shooter.setDefaultCommand(
         shooter.powerFromSupplier(() -> driverXbox.getRightTriggerAxis()));
