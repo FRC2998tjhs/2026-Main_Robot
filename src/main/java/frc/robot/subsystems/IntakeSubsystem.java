@@ -18,7 +18,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final PWMVictorSPX rightLiftMotor = new PWMVictorSPX(0);
     private final double rightSpeedMax = 0.24;
 
-    private final double maxPickupRpm = 2000;
+    private final double maxPickupRpm = 4000;
     private double targetPickupRpm = 0;
     private final PIDController pickupPid = new PIDController(0.0001, 0.0, 0);
 

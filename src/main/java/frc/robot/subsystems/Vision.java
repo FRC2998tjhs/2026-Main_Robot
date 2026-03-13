@@ -49,8 +49,12 @@ public class Vision {
   private final double maximumAmbiguity = 0.25;
   private double longDistancePoseEstimationCount = 0;
 
-  public Field2d field2d = new Field2d();
+  public Field2d field2d;
   public VisionSystemSim visionSim;
+
+  public Vision(Field2d field2d) {
+    this.field2d = field2d;
+  }
 
   /**
    * Calculates a target pose relative to an AprilTag on the field.

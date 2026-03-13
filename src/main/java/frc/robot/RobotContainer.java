@@ -7,9 +7,13 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -25,17 +29,20 @@ import java.io.File;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 
+import org.dyn4j.geometry.Vector3;
+
 import swervelib.SwerveInputStream;
 
 public class RobotContainer {
   private final CommandXboxController driverXbox = new CommandXboxController(0);
 
-  private final Vision vision = new Vision();
+  private final Field2d field2d = new Field2d();
+  private final Vision vision = new Vision(field2d);
 
   private final SwerveSubsystem swerve = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"),
       vision);
   private final IntakeSubsystem intake = new IntakeSubsystem();
-  private final ShooterSubsystem shooter = new ShooterSubsystem(swerve);
+  private final ShooterSubsystem shooter = new ShooterSubsystem(swerve, field2d);
 
   private final SendableChooser<Command> autoChooser;
 
@@ -94,11 +101,17 @@ public class RobotContainer {
 
   private void configureBindings() {
     Command driveCommand = swerve.driveFieldOriented(rightStickAngle);
-    // Command driveCommand = swerve.driveFieldOriented(pointAndDrive);
     swerve.setDefaultCommand(driveCommand);
 
-    shooter.setDefaultCommand(
-        shooter.powerFromSupplier(() -> driverXbox.getRightTriggerAxis()));
+    var redGoal = new Vector3(Units.inchesToMeters(469.11), Units.inchesToMeters(158.84), Units.inchesToMeters(72));
+    // shooter.setDefaultCommand(shooter.shootAbsolute(() -> redGoal));
+
+    var targetPrimary = Shuffleboard.getTab("Shooter").add("Primary RPM", 1500).getEntry();
+    var targetSecondary = Shuffleboard.getTab("Shooter").add("Secondary RPM", 1500).getEntry();
+    shooter.setDefaultCommand(shooter.run(() -> {
+      shooter.targetPrimaryRpm = targetPrimary.getDouble(1500);
+      shooter.targetSecondaryRpm = targetSecondary.getDouble(1500);
+    }));
 
     driverXbox.start().onTrue(Commands.runOnce(swerve::zeroGyro));
 
@@ -106,6 +119,8 @@ public class RobotContainer {
     driverXbox.rightBumper().onTrue(intake.down());
     driverXbox.y().onTrue(intake.pickup());
     driverXbox.b().onTrue(intake.stop());
+
+    driverXbox.x().whileTrue(shooter.unstuck());
 
     // driverXbox.x().whileTrue(shooter.testShoot(() -> 10.0));
     // driverXbox.a().whileTrue(shooter.testShoot(() -> 20.0));
@@ -120,7 +135,7 @@ public class RobotContainer {
   }
 
   public void teleopInit() {
-    // shooter.setKicker(1.0);
+    // shooter.setKicker(-1.0);
     shooter.zeroDeflector();
   }
 
