@@ -8,9 +8,10 @@ import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.SafeSparkMax;
 
 public class IntakeSubsystem extends SubsystemBase {
-    private final SparkMax pickup = new SparkMax(8, MotorType.kBrushless);
+    private final SparkMax pickup = new SafeSparkMax(8, MotorType.kBrushless);
 
     private final SparkMax leftLiftMotor = new SparkMax(3, MotorType.kBrushless);
     private final double leftSpeedMax = 0.3;
@@ -18,7 +19,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final PWMVictorSPX rightLiftMotor = new PWMVictorSPX(0);
     private final double rightSpeedMax = 0.24;
 
-    private final double maxPickupRpm = 4000;
+    private final double maxPickupRpm = 3000;
     private double targetPickupRpm = 0;
     private final PIDController pickupPid = new PIDController(0.0001, 0.0, 0);
 
@@ -55,13 +56,13 @@ public class IntakeSubsystem extends SubsystemBase {
             targetPickupRpm = maxPickupRpm;
         });
     }
-    
+
     public Command eject() {
         return Commands.runOnce(() -> {
             targetPickupRpm = -maxPickupRpm;
         });
     }
-    
+
     public Command stop() {
         return Commands.runOnce(() -> {
             targetPickupRpm = 0;

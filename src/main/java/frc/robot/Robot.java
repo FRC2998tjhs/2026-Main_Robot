@@ -40,10 +40,8 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
-    // Instantiate our RobotContainer. This will perform all our button bindings,
-    // and put our
-    // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
+    m_robotContainer.robotInit();
 
     // Create a timer to disable motor brake a few seconds after disable. This will
     // let the robot stop
@@ -147,6 +145,7 @@ public class Robot extends TimedRobot {
   @Override
   public void testInit() {
     // Cancels all running commands at the start of test mode.
+    m_robotContainer.testInit();
     CommandScheduler.getInstance().cancelAll();
   }
 
@@ -155,6 +154,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void testPeriodic() {
+    m_robotContainer.testPeriodic();
   }
 
   /**
