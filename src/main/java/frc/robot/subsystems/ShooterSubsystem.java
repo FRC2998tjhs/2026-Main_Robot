@@ -65,14 +65,15 @@ public class ShooterSubsystem extends SubsystemBase {
     private final Field2d field2d;
     private GenericEntry shooterStatus;
     private GenericEntry minRPM;
-    private GenericEntry tableRpm;
+    private GenericEntry primaryTableRpm;
     private double kickerSpeed = 0;
+    private GenericEntry secondaryTableRpm;
+    private GenericEntry dist;
 
     public void reset() {
-        isHomed = false;
-        targetRpm = 0.0;
-        targetRpm = 0.0;
-        targetDeflectorRotation = Rotation2d.kZero;
+        // isHomed = false;
+        // targetRpm = 0.0;
+        // targetDeflectorRotation = Rotation2d.kZero;
     }
 
     public Command toggle() {
@@ -96,8 +97,11 @@ public class ShooterSubsystem extends SubsystemBase {
 
         this.shooterStatus = Shuffleboard.getTab("Shooter").add("Shooter Status", true).getEntry();
         this.minRPM = Shuffleboard.getTab("Shooter").add("Min RPM", 1000).getEntry();
-        this.tableRpm = Shuffleboard.getTab("Shooter").add("Shooter RPM", primary.getEncoder().getVelocity())
+        this.primaryTableRpm = Shuffleboard.getTab("Shooter").add("Primary RPM", primary.getEncoder().getVelocity())
                 .getEntry();
+        this.secondaryTableRpm = Shuffleboard.getTab("Shooter").add("Secondary RPM", primary.getEncoder().getVelocity())
+                .getEntry();
+        this.dist = Shuffleboard.getTab("Shooter").add("Distance", 10).getEntry();
 
     }
 
@@ -180,8 +184,7 @@ public class ShooterSubsystem extends SubsystemBase {
         // targetPrimaryRpm = 1800;
         // targetPrimaryRpm = 1800;
 
-        targetRpm = 841 * Math.exp(0.0025 * delta.x);
-        targetRpm = 841 * Math.exp(0.0025 * delta.x);
+        targetRpm = 841 * Math.exp(0.0025 * dist.getDouble(10));
     }
 
     @Override
@@ -192,7 +195,8 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterPeriodic();
         deflectorPeriodic();
 
-        tableRpm.setDouble(primary.getEncoder().getVelocity());
+        primaryTableRpm.setDouble(primary.getEncoder().getVelocity());
+        secondaryTableRpm.setDouble(secondary.getEncoder().getVelocity());
     }
 
     private void shooterPeriodic() {
@@ -203,6 +207,8 @@ public class ShooterSubsystem extends SubsystemBase {
         }
 
         double primaryMeasuredRpm = -primary.getEncoder().getVelocity();
+
+        targetRpm = 841 * Math.exp(0.0025 * dist.getDouble(10));
 
         targetRpm = targetRpm < minRPM.getDouble(DEFAULT_MIN_RPM) ? minRPM.getDouble(DEFAULT_MIN_RPM) : targetRpm;
         double primaryBase = 0.00025 * targetRpm;
@@ -215,8 +221,9 @@ public class ShooterSubsystem extends SubsystemBase {
         secondaryPower = MathUtil.clamp(secondaryBase + secondaryPower, -1, 1);
         secondary.set(-secondaryPower);
 
-        if (primaryMeasuredRpm < minRPM.getDouble(DEFAULT_MIN_RPM) || primaryMeasuredRpm < targetRpm * 0.9) {
-            kickerSpeed = 0;
+        if (primaryMeasuredRpm < minRPM.getDouble(1300) || primaryMeasuredRpm < targetRpm * 0.9) {
+            kicker.set(0);
+            return;
         }
         kicker.set(kickerSpeed);
         // else {

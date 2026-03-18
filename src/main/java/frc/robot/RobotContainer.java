@@ -102,15 +102,18 @@ public class RobotContainer {
   }
 
   private void configureBindings() {
+    driverXbox.leftStick().onTrue(shooter.toggle());
+    driverXbox.rightTrigger().onTrue(shooter.setKicker(() -> 1)).onFalse(shooter.setKicker(() -> 0));
+
     driverXbox.povUp().onTrue(shooter.homeDeflector());
 
     if (DriverStation.isTest()) {
-      shooter.setDefaultCommand(shooter.deflectorTo(() -> new Rotation2d(driverXbox.getRightX(), driverXbox.getRightY())));
+      shooter.setDefaultCommand(shooter.deflectorTo(() -> new Rotation2d(-driverXbox.getRightY(), -driverXbox.getRightX())));
       return;
     }
 
-    Command driveCommand = swerve.driveFieldOriented(rightStickAngle);
-    swerve.setDefaultCommand(driveCommand);
+    // Command driveCommand = swerve.driveFieldOriented(rightStickAngle);
+    // swerve.setDefaultCommand(driveCommand);
 
     // var redGoal = new Vector3(Units.inchesToMeters(469.11),
     // Units.inchesToMeters(158.84), Units.inchesToMeters(72));
@@ -127,9 +130,6 @@ public class RobotContainer {
 
     driverXbox.start().onTrue(Commands.runOnce(swerve::zeroGyro));
 
-    driverXbox.rightTrigger().onTrue(shooter.setKicker(() -> 1)).onFalse(shooter.setKicker(() -> 0));
-    driverXbox.leftStick().onTrue(shooter.toggle());
-    
     driverXbox.leftBumper().onTrue(intake.up());
     driverXbox.rightBumper().onTrue(intake.down());
     driverXbox.y().onTrue(intake.pickup());
