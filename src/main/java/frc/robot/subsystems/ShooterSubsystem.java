@@ -31,13 +31,13 @@ import frc.robot.UiTunablePIDController;
 
 public class ShooterSubsystem extends SubsystemBase {
 
-    private static final int DEFAULT_MIN_RPM = 1000;
+    private static final int DEFAULT_MIN_RPM = 1350;
     // private static final int MINIMUM_RPM_TO_NOT_JAM = 1200;
     // private static final double GOAL_LEFT_SIDE = 352.893;
     // private static final double GOAL_RIGHT_SIDE = 282.483;
     // // private static final double DEFLECTOR_POSITION_WHEN_SET =
     // // -0.0714285671710968;
-    private static final double DEFLECTOR_POSITION_WHEN_SET = -19.5;
+    private static final double DEFLECTOR_POSITION_WHEN_SET = -8.4;
     private static final int deflectorHeight = 17;
 
     private final SwerveSubsystem swerve;
@@ -49,12 +49,12 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PIDController secondaryPid = new PIDController(0.001, 0.0, 0.0);
 
     private final SparkMax deflector = new SparkMax(11, MotorType.kBrushless);
-    private final PIDController deflectorPid = new PIDController(3.0, 0.0, 0.36);
-    private static final double ENCODER_STEPS_PER_ROTATION = 3.0905 * 36;
+    private final PIDController deflectorPid = new UiTunablePIDController(1.2, 0.0, 0.05);
+    private static final double ENCODER_STEPS_PER_ROTATION = 49.468939208984375;
     private final DigitalInput homingLimit = new DigitalInput(0);
     private boolean isHomed = false;
 
-    private final PWMVictorSPX kicker = new PWMVictorSPX(1);
+    private final SparkMax kicker = new SparkMax(17, MotorType.kBrushless);
 
     public double targetRpm = 0.0;
     private final double maxRpm = 3500;
@@ -85,8 +85,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public Command setKicker(DoubleSupplier speed) {
         return Commands.runOnce(() -> {
             if (shooterStatus.getBoolean(true)) {
-                // kicker.set(-speed.getAsDouble());
-                kickerSpeed = -speed.getAsDouble();
+                kickerSpeed = speed.getAsDouble();
             }
         });
     }
@@ -96,7 +95,7 @@ public class ShooterSubsystem extends SubsystemBase {
         this.field2d = field2d;
 
         this.shooterStatus = Shuffleboard.getTab("Shooter").add("Shooter Status", true).getEntry();
-        this.minRPM = Shuffleboard.getTab("Shooter").add("Min RPM", 1000).getEntry();
+        this.minRPM = Shuffleboard.getTab("Shooter").add("Min RPM", DEFAULT_MIN_RPM).getEntry();
         this.primaryTableRpm = Shuffleboard.getTab("Shooter").add("Primary RPM", primary.getEncoder().getVelocity())
                 .getEntry();
         this.secondaryTableRpm = Shuffleboard.getTab("Shooter").add("Secondary RPM", primary.getEncoder().getVelocity())
@@ -149,9 +148,11 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private Rotation2d deflectorRotation(Pose2d robotPose, Vector3 target) {
-        var offset = new Translation2d(-1, 1);
+        var offset = new Translation2d(-0.1375, -0.0755);
         var rotatedOffset = offset.rotateBy(robotPose.getRotation());
         var shooterPosition = rotatedOffset.plus(robotPose.getTranslation());
+        
+        field2d.getObject("Shooter Pose").setPose(shooterPosition.getX(), shooterPosition.getY(), new Rotation2d());
 
         var shooterToTarget = new Translation2d(target.x, target.y).minus(shooterPosition);
         var globalShooterAngle = shooterToTarget.getAngle();
@@ -181,10 +182,9 @@ public class ShooterSubsystem extends SubsystemBase {
         // double exitSpeed = Math.sqrt(Math.abs(numerator / denominator));
         // targetRpm = exitSpeed / (2 * Math.PI * WHEEL_RADIUS) * 60.;
 
-        // targetPrimaryRpm = 1800;
-        // targetPrimaryRpm = 1800;
+        targetRpm = 1300;
 
-        targetRpm = 841 * Math.exp(0.0025 * dist.getDouble(10));
+        // targetRpm = 841 * Math.exp(0.0025 * dist.getDouble(10));
     }
 
     @Override
@@ -221,19 +221,18 @@ public class ShooterSubsystem extends SubsystemBase {
         secondaryPower = MathUtil.clamp(secondaryBase + secondaryPower, -1, 1);
         secondary.set(-secondaryPower);
 
-        if (primaryMeasuredRpm < minRPM.getDouble(1300) || primaryMeasuredRpm < targetRpm * 0.9) {
+        if (primaryMeasuredRpm < minRPM.getDouble(DEFAULT_MIN_RPM) || primaryMeasuredRpm < targetRpm * 0.95) {
             kicker.set(0);
             return;
         }
         kicker.set(kickerSpeed);
-        // else {
-        // kicker.set(-1);
-        // }
     }
 
     private void deflectorPeriodic() {
+        // if (true)
+        //     return;
         var encoder = deflector.getEncoder().getPosition();
-        var encoderRotation = Rotation2d.fromRadians(encoder / ENCODER_STEPS_PER_ROTATION * 2 * Math.PI);
+        var encoderRotation = Rotation2d.fromRadians((encoder) / ENCODER_STEPS_PER_ROTATION * 2 * Math.PI);
         var error = targetDeflectorRotation.minus(encoderRotation);
 
         double power = deflectorPid.calculate(-error.getRadians());
@@ -246,7 +245,7 @@ public class ShooterSubsystem extends SubsystemBase {
         });
     }
 
-    public Command setSpeed(DoubleSupplier speed) {
+    public Command setDeflectorSpeed(DoubleSupplier speed) {
         return this.run(() -> {
             deflector.set(speed.getAsDouble());
         });
@@ -286,6 +285,13 @@ public class ShooterSubsystem extends SubsystemBase {
     public Command logEncoder() {
         return Commands.runOnce(() -> {
             System.out.println(deflector.getEncoder().getPosition());
+        });
+    }
+
+    public Command zeroEncoder() {
+        return Commands.runOnce(() -> {
+            deflector.getEncoder().setPosition(0);
+            System.out.println("zeroed encoder");
         });
     }
 }
